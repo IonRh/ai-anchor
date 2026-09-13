@@ -5,6 +5,9 @@ on:
   push:
     paths: ["android-app/**"]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,10 +34,23 @@ jobs:
           cp static/mobile.html android-app/app/src/main/assets/mobile.html
 
       - name: Build debug APK
-        run: gradle -p android-app assembleDebug --no-daemon
+        run: |
+          set -o pipefail
+          gradle -p android-app assembleDebug --no-daemon 2>&1 | tee build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: ai-anchor-apk
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Report errors back to repo
+        if: failure()
+        run: |
+          grep -aE "^(e: |error: |FAILURE|\\* What went wrong)" build.log | head -40 > error-summary.txt
+          if [ ! -s error-summary.txt ]; then tail -60 build.log > error-summary.txt; fi
+          git config user.name "build-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add error-summary.txt
+          git commit -m "BUILD ERROR REPORT (auto)"
+          git push
