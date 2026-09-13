@@ -25,6 +25,11 @@ jobs:
         with:
           gradle-version: "8.5"
 
+      - name: Sync mobile page into APK assets
+        run: |
+          mkdir -p android-app/app/src/main/assets
+          cp static/mobile.html android-app/app/src/main/assets/mobile.html
+
       - name: Build debug APK
         run: gradle -p android-app assembleDebug --no-daemon
 

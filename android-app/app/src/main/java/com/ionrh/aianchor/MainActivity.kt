@@ -63,6 +63,10 @@ class MainActivity : Activity() {
 
     /** 页面 ↔ 无障碍服务的桥。方法在桥线程执行，阻塞式返回结果。 */
     inner class Bridge {
+        /** 页面从本地 assets 加载，数据请求指向该地址 */
+        @JavascriptInterface
+        fun serverUrl(): String = prefs.getString("server", "") ?: ""
+
         @JavascriptInterface
         fun serviceEnabled(): Boolean = AnchorAccessibilityService.isRunning()
 
@@ -100,7 +104,8 @@ class MainActivity : Activity() {
 
     private fun load(server: String) {
         prefs.edit().putString("server", server).apply()
-        web.loadUrl(server.trimEnd('/') + "/mobile.html")
+        // 界面从 APK 本地 assets 加载（不依赖服务端存活），数据通过 AndroidBridge.serverUrl() 取
+        web.loadUrl("file:///android_asset/mobile.html")
     }
 
     private fun askServer(message: String?) {
