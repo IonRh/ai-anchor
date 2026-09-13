@@ -130,7 +130,7 @@ class MainActivity : Activity() {
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     android.net.Uri.parse("package:$packageName")
                 ))
-                Toast.makeText(this, "请允许「显示在其他应用上层」，然后回来重新打开开关", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, "请允许「显示在其他应用上层」，然后回来重新打开开关", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -169,7 +169,7 @@ class MainActivity : Activity() {
     private fun svc(): AnchorAccessibilityService? =
         AnchorAccessibilityService.instance ?: run {
             runOnUiThread {
-                Toast.makeText(this, "请先在设置页开启无障碍服务", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "请先在设置页开启无障碍服务", Toast.LENGTH_SHORT).show()
             }
             null
         }
