@@ -121,7 +121,7 @@ class MainActivity : Activity() {
 
         /** 悬浮球：需要系统授予「显示在其他应用上层」权限 */
         @JavascriptInterface
-        fun overlayReady(): Boolean = Settings.canDrawOverlays(this)
+        fun overlayReady(): Boolean = Settings.canDrawOverlays(this@MainActivity)
 
         @JavascriptInterface
         fun openOverlaySettings() {
@@ -136,7 +136,7 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun floatShow() {
-            if (!Settings.canDrawOverlays(this)) {
+            if (!Settings.canDrawOverlays(this@MainActivity)) {
                 runOnUiThread { openOverlaySettings() }
                 return
             }
