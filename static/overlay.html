@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>AI 主播 Overlay（OBS 浏览器源）</title>
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+  #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; }
+  #wrap { margin-bottom: 4vh; text-align: center; }
+
+  /* CSS 备用数字人形象：会眨眼、说话时嘴巴动 */
+  #avatar { width: 140px; height: 140px; margin: 0 auto; position: relative; }
+  #avatar .head { width: 100%; height: 100%; border-radius: 50%;
+    background: linear-gradient(160deg, #9ad3ff, #4a90d9); box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+  #avatar .eye { position: absolute; top: 44px; width: 18px; height: 24px; border-radius: 50%; background: #16324f; }
+  #avatar .eye.l { left: 34px; } #avatar .eye.r { right: 34px; }
+  #avatar .eye.blink { animation: blink 3.5s infinite; }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  #avatar .mouth { position: absolute; left: 50%; transform: translateX(-50%); bottom: 32px;
+    width: 34px; height: 10px; border-radius: 6px; background: #16324f; transition: height .1s; }
+  #avatar.talking .mouth { animation: talk .35s infinite alternate; }
+  @keyframes talk { from { height: 6px; } to { height: 22px; } }
+
+  #caption { margin-top: 14px; display: inline-block; max-width: 80vw; padding: 8px 18px;
+    border-radius: 14px; background: rgba(20, 30, 48, .82); color: #fff;
+    font-size: 22px; line-height: 1.5; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  #speaker { font-size: 14px; opacity: .75; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="wrap">
+    <div id="live2d-host"></div>
+    <div id="avatar">
+      <div class="head"></div>
+      <div class="eye l blink"></div>
+      <div class="eye r blink"></div>
+      <div class="mouth"></div>
+    </div>
+    <div id="caption"><span id="speaker"></span><span id="text">等待直播事件…</span></div>
+  </div>
+</div>
+<audio id="player" autoplay></audio>
+
+<script>
+const avatar = document.getElementById('avatar');
+const textEl = document.getElementById('text');
+const speakerEl = document.getElementById('speaker');
+const player = document.getElementById('player');
+
+/* Live2D（可选）：URL 加 ?model=<模型json地址> 时尝试从 CDN 加载，失败自动回退 CSS 形象 */
+(async function tryLive2D() {
+  const modelUrl = new URLSearchParams(location.search).get('model');
+  if (!modelUrl) return;
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js');
+    const app = new PIXI.Application({ width: 400, height: 400, transparent: true });
+    document.getElementById('live2d-host').appendChild(app.view);
+    const model = await PIXI.live2d.Live2DModel.from(modelUrl);
+    model.scale.set(0.3);
+    app.stage.addChild(model);
+    avatar.style.display = 'none';
+    window.__live2d = model;
+  } catch (e) {
+    console.warn('Live2D 加载失败，使用 CSS 形象', e);
+  }
+})();
+
+function loadScript(src) {
+  return new Promise((ok, err) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = err;
+    document.head.appendChild(s);
+  });
+}
+
+function setCaption(speaker, text) {
+  speakerEl.textContent = speaker ? speaker + '：' : '';
+  textEl.textContent = text;
+}
+
+player.onplay = () => { avatar.classList.add('talking'); if (window.__live2d) window.__live2d.speak?.(); };
+player.onended = () => avatar.classList.remove('talking');
+
+const ws = new WebSocket(`ws://${location.host}/ws`);
+ws.onmessage = (ev) => {
+  const msg = JSON.parse(ev.data);
+  if (!['reply', 'welcome', 'gift_thanks', 'follow_thanks', 'schedule', 'trends', 'points',
+        'song', 'song_miss', 'song_stop', 'song_play'].includes(msg.type)) return;
+  if (msg.type === 'song_play') {
+    player.src = msg.audio_url;
+    player.play();
+    setCaption('', '♪ 正在播放 ' + msg.audio_url.split('/').pop());
+    return;
+  }
+  if (msg.text) setCaption(msg.type === 'reply' ? '回复 ' + msg.username : '', msg.text);
+  if (msg.audio_url) {
+    player.src = msg.audio_url;
+    player.play();
+  }
+};
+</script>
+</body>
+</html>

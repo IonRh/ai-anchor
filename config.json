@@ -1,0 +1,193 @@
+{
+  "platform": "bilibili",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "bilibili": {
+    "room_id": 21452505,
+    "sessdata": ""
+  },
+  "douyin": {
+    "source_url": "http://127.0.0.1:8888/danmu",
+    "room_id": ""
+  },
+  "llm": {
+    "enabled": false,
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key": "",
+    "model": "deepseek-chat",
+    "system_prompt": "你是一位活泼的AI虚拟主播，正在直播间和观众互动。回答要口语化、简短（50字以内），不要出现敏感内容。不要自报家门说自己是AI模型。",
+    "max_tokens": 120
+  },
+  "reply": {
+    "max_turns": 6,
+    "per_user_interval": 8,
+    "queue_timeout": 25,
+    "queue_max": 50
+  },
+  "keywords": {
+    "enable": true,
+    "rules": [
+      {
+        "keys": [
+          "谢谢",
+          "感谢",
+          "3Q",
+          "thank"
+        ],
+        "replies": [
+          "不客气呀 {username}",
+          "小意思啦，常来玩"
+        ]
+      },
+      {
+        "keys": [
+          "好听",
+          "唱得不错",
+          "re:好\\s*听"
+        ],
+        "replies": [
+          "谢谢鼓励，再给你来一首",
+          "嘿嘿，喜欢就常来听"
+        ]
+      },
+      {
+        "keys": [
+          "666",
+          "厉害",
+          "牛"
+        ],
+        "replies": [
+          "谢谢 {username}，我会继续努力的"
+        ]
+      }
+    ]
+  },
+  "tts": {
+    "engine": "edge",
+    "voice": "zh-CN-YunxiNeural",
+    "rate": "+5%",
+    "volume": "+0%",
+    "out_dir": "out/tts",
+    "gptsovits": {
+      "api_ip_port": "http://127.0.0.1:9880",
+      "ref_audio_path": "",
+      "prompt_text": "",
+      "prompt_lang": "zh",
+      "text_lang": "zh",
+      "speed_factor": 1,
+      "media_type": "wav"
+    }
+  },
+  "filter": {
+    "badwords_path": "data/badwords.txt",
+    "max_len": 80,
+    "content_rules": [
+      "广告",
+      "优惠券",
+      "加微信",
+      "re:刷单|代练"
+    ],
+    "username_rules": [
+      "re:官方|客服"
+    ]
+  },
+  "greet": {
+    "entrance_enable": true,
+    "entrance_templates": [
+      "欢迎 {username} 进入直播间",
+      "欢迎新来的 {username}"
+    ],
+    "gift_enable": true,
+    "gift_templates": [
+      "感谢 {username} 送的 {gift_name}，老板大气",
+      "{gift_name} 收到啦，谢谢 {username}"
+    ],
+    "follow_enable": true,
+    "follow_templates": [
+      "感谢 {username} 的关注",
+      "谢谢 {username} 的关注，爱你哦"
+    ],
+    "like_enable": true,
+    "like_min_count": 5,
+    "like_templates": [
+      "谢谢 {username} 点赞，爱你"
+    ]
+  },
+  "integral": {
+    "enable": true,
+    "db_path": "data/anchor.db",
+    "entrance_points": 1,
+    "gift_points_per_yuan": 1,
+    "sign_points": 2,
+    "sign_cmds": [
+      "签到",
+      "打卡"
+    ],
+    "query_cmds": [
+      "我的积分",
+      "查询积分"
+    ]
+  },
+  "song": {
+    "enable": true,
+    "start_cmd": "点歌 ",
+    "stop_cmd": "取消点歌",
+    "random_cmd": "随机点歌",
+    "folder": "data/songs",
+    "miss_templates": [
+      "抱歉，我还没学会唱 {song}"
+    ]
+  },
+  "schedule": {
+    "enable": true,
+    "tick_interval": 30,
+    "items": [
+      {
+        "enable": true,
+        "type": "time",
+        "interval": 600,
+        "templates": [
+          "现在是 {time}",
+          "当前时间为 {time}"
+        ]
+      },
+      {
+        "enable": true,
+        "type": "viewers",
+        "interval": 300,
+        "interval_range": [
+          240,
+          360
+        ],
+        "templates": [
+          "感谢还在观看直播的 {user_num} 位兄弟姐妹们"
+        ]
+      },
+      {
+        "enable": true,
+        "type": "custom",
+        "interval": 900,
+        "templates": [
+          "喜欢主播的点个关注哦"
+        ]
+      }
+    ]
+  },
+  "trends": {
+    "enable": true,
+    "folder": "data/trends",
+    "interval": 240,
+    "llm_rewrite": true,
+    "prompt_change_enable": true,
+    "prompt_change_content": "请根据我发送的内容，意思不变，内容不同，直接输出新文案："
+  },
+  "streaming": {
+    "obs": {
+      "enable": false,
+      "path": "C:/Program Files/obs-studio/bin/64bit/obs64.exe",
+      "args": []
+    }
+  }
+}

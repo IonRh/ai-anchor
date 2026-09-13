@@ -1,0 +1,14 @@
+{
+  "name": "AI 智能直播助手",
+  "short_name": "直播助手",
+  "description": "AI 主播中控：控制直播监听、查看弹幕消息、实时播放主播语音",
+  "start_url": "/mobile.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f4f7",
+  "theme_color": "#1a66cc",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

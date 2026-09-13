@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 运行产物
+out/
+data/*.db
+data/messages.db
+
+# 本机配置（含密钥时不入库）
+# config.json
+
+# Android 构建产物
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
