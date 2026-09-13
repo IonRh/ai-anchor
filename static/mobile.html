@@ -102,12 +102,14 @@
     <p id="ctrlMsg">点击开始监听直播间弹幕</p>
     <div id="eq"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="row">
-      <select id="platform" style="max-width:120px">
+      <select id="platform" style="max-width:110px">
         <option value="bilibili">B 站</option>
         <option value="douyin">抖音</option>
       </select>
       <input type="text" id="room" placeholder="直播间 ID">
-      <button id="mainToggle" onclick="toggleListen()">开始</button>
+    </div>
+    <div class="row">
+      <button id="mainToggle" style="width:100%;padding:14px;font-size:16px" onclick="toggleListen()">开始监听</button>
     </div>
     <div class="stats">
       <div class="c"><b>弹幕</b><span id="cDanmu">0</span></div>
@@ -139,7 +141,7 @@
 <!-- ===== 话术 ===== -->
 <section class="page" id="page-speak">
   <div class="card">
-    <h2>常用话术（点击即说，长按进入编辑）</h2>
+    <h2>常用话术（点击即说）</h2>
     <div class="quick" id="quickBox"></div>
     <div class="row">
       <input type="text" id="speakText" placeholder="输入内容…">
