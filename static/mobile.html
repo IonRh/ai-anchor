@@ -305,6 +305,13 @@
     <p class="hint" id="sTestResult">输入弹幕点测试，看它会走关键词、AI 还是过滤。</p>
   </div>
 
+  <div class="card" id="serverCard" style="display:none">
+    <h2>服务端（可选）</h2>
+    <div class="row"><span class="flab">地址</span><input type="text" id="sServer" placeholder="http://192.168.1.5:8000"></div>
+    <button onclick="saveServer()">保存并刷新</button>
+    <p class="hint">留空 = 离线模式（仅抖音自动化可用）。填电脑地址后可远程控制直播、收弹幕、AI 回复。</p>
+  </div>
+
   <div class="card">
     <h2>连接</h2>
     <p class="hint" style="margin-top:0">
@@ -465,7 +472,17 @@ async function speak(text, clear) {
 
 /* ---------- 抖音自动化（AndroidBridge，仅 APK 内可用） ---------- */
 const hasBridge = typeof AndroidBridge !== 'undefined';
-if (hasBridge) $('navDouyin').style.display = '';
+if (hasBridge) {
+  $('navDouyin').style.display = '';
+  $('serverCard').style.display = '';
+  $('sServer').value = SERVER;
+}
+function saveServer() {
+  if (!hasBridge) return;
+  let v = $('sServer').value.trim();
+  if (v && !v.startsWith('http')) v = 'http://' + v;
+  AndroidBridge.setServer(v);   // 保存后 App 自动重载页面使地址生效
+}
 
 function checkA11y() {
   if (!hasBridge) return;
@@ -591,7 +608,9 @@ async function poll() {
     $('cGift').textContent = s.counters.gift; $('cLike').textContent = s.counters.like;
     $('aiToggle').checked = s.ai_reply_enabled;
     if (s.running !== listening) setUI(s.running, s.platform, $('room').value, '');
-  } catch (e) { setUI(false, '', '', '无法连接服务，请检查网络', true); }
+  } catch (e) {
+    setUI(false, '', '', SERVER ? '无法连接服务，请检查网络' : '离线模式：配置服务端后可远程控制直播', true);
+  }
 }
 setInterval(poll, 5000);
 

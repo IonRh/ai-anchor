@@ -58,14 +58,20 @@ class MainActivity : Activity() {
         }
 
         val saved = prefs.getString("server", null)
-        if (saved.isNullOrBlank()) askServer(null) else load(saved)
+        if (saved == null) askServer(null) else load(saved)
     }
 
     /** 页面 ↔ 无障碍服务的桥。方法在桥线程执行，阻塞式返回结果。 */
     inner class Bridge {
-        /** 页面从本地 assets 加载，数据请求指向该地址 */
+        /** 页面从本地 assets 加载，数据请求指向该地址（空 = 离线模式） */
         @JavascriptInterface
         fun serverUrl(): String = prefs.getString("server", "") ?: ""
+
+        @JavascriptInterface
+        fun setServer(url: String) {
+            prefs.edit().putString("server", url.trim()).apply()
+            runOnUiThread { web.loadUrl("file:///android_asset/mobile.html") }
+        }
 
         @JavascriptInterface
         fun serviceEnabled(): Boolean = AnchorAccessibilityService.isRunning()
@@ -116,13 +122,16 @@ class MainActivity : Activity() {
         }
         AlertDialog.Builder(this)
             .setTitle("服务器地址")
-            .setMessage(message ?: "输入电脑端服务地址（手机与电脑需在同一局域网）")
+            .setMessage(message
+                ?: "填电脑端服务地址可远程控制直播（手机与电脑同一局域网）。\n没有服务器？点「离线使用」，仅抖音自动化可用，之后可在设置页补填。")
             .setView(input)
             .setCancelable(false)
             .setPositiveButton("连接") { _, _ ->
-                val addr = input.text.toString().trim()
-                if (addr.startsWith("http")) load(addr) else askServer("地址需要以 http:// 开头")
+                var addr = input.text.toString().trim()
+                if (addr.isNotEmpty() && !addr.startsWith("http")) addr = "http://$addr"
+                load(addr)
             }
+            .setNeutralButton("离线使用") { _, _ -> load("") }
             .show()
     }
 
