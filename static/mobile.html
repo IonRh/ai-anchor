@@ -122,6 +122,13 @@
   nav.bottom button.on { color: var(--accent); }
   .hint { font-size: 12px; color: var(--sub); margin: 6px 0 0; line-height: 1.6; }
   a.link { color: var(--accent); text-decoration: none; }
+  .flab { font-size: 13px; color: var(--sub); min-width: 64px; }
+  .ta {
+    width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid var(--line);
+    border-radius: 12px; background: #101828; color: var(--txt); outline: none;
+    font-family: inherit; resize: vertical; margin-bottom: 8px;
+  }
+  .ta:focus { border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -192,6 +199,41 @@
   </div>
 </section>
 
+<!-- ===== 抖音自动化（仅 APK 内显示） ===== -->
+<section class="page" id="page-douyin">
+  <div class="card">
+    <h2>无障碍服务</h2>
+    <div class="switch-row">
+      <div class="lab">服务状态<small id="a11ySub">检查中…</small></div>
+      <button class="gray" style="padding:8px 14px;font-size:13px" onclick="openA11y()">去开启</button>
+    </div>
+    <p class="hint">开启方法：系统设置 → 无障碍 → 已下载的应用 → 「AI直播助手」→ 开启。</p>
+  </div>
+  <div class="card">
+    <h2>抖音自动化</h2>
+    <div class="row">
+      <button id="liveBtn" style="flex:1;padding:16px;font-size:16px" onclick="doStartLive()">🚀 一键开播（抖音）</button>
+    </div>
+    <div class="row">
+      <button class="gray" style="flex:1" onclick="doLike()">❤️ 双击点赞</button>
+      <button class="gray" style="flex:1" onclick="bcall(s => s.goBack())">↩️ 返回</button>
+    </div>
+    <p class="hint">一键开播：自动打开抖音 → 点「开直播」→ 点「开始视频直播」。抖音界面文案随版本可能变化，失败时可用下方「按文字点击」手动补一步。</p>
+  </div>
+  <div class="card">
+    <h2>发弹幕到抖音直播间</h2>
+    <div class="row">
+      <input type="text" id="dyComment" placeholder="输入要发到直播间的评论…">
+      <button class="green" onclick="doComment()">发送</button>
+    </div>
+    <h2 style="margin-top:14px">按文字点击控件</h2>
+    <div class="row">
+      <input type="text" id="dyTap" placeholder="屏幕上按钮的文字，例如：上链接">
+      <button onclick="doTap()">点击</button>
+    </div>
+  </div>
+</section>
+
 <!-- ===== 设置 ===== -->
 <section class="page" id="page-set">
   <div class="card">
@@ -205,12 +247,70 @@
       <label class="tgl"><input type="checkbox" id="soundOn" checked><span class="knob"></span></label>
     </div>
   </div>
+
+  <div class="card">
+    <h2>AI 回复设置</h2>
+    <div class="row"><span class="flab">接口地址</span><input type="text" id="sBase" placeholder="https://api.deepseek.com/v1"></div>
+    <div class="row"><span class="flab">API Key</span><input type="password" id="sKey" placeholder="sk-..."></div>
+    <div class="row"><span class="flab">模型</span><input type="text" id="sModel" placeholder="deepseek-chat">
+      <button class="gray" style="padding:10px 12px;font-size:12px" onclick="fetchModelsM()">拉取</button></div>
+    <select id="sModelList" style="display:none;width:100%;margin-bottom:8px" onchange="document.getElementById('sModel').value=this.value"></select>
+    <div class="row"><span class="flab">人设 Prompt</span></div>
+    <textarea id="sPrompt" class="ta" rows="3"></textarea>
+    <div class="row">
+      <span class="flab">限流(秒)</span><input type="number" id="sInterval" style="max-width:80px">
+      <span class="flab" style="min-width:auto">记忆(轮)</span><input type="number" id="sTurns" style="max-width:80px">
+    </div>
+    <button onclick="saveAI()">保存 AI 设置</button>
+  </div>
+
+  <div class="card">
+    <h2>关键词回复（优先于 AI）</h2>
+    <textarea id="sKw" class="ta" rows="4" placeholder="关键词1|关键词2 => 回复1||回复2"></textarea>
+    <button onclick="saveKw()">保存关键词</button>
+  </div>
+
+  <div class="card">
+    <h2>过滤规则（只影响 AI 触发）</h2>
+    <div class="row"><span class="flab">内容</span></div>
+    <textarea id="sFilterContent" class="ta" rows="2" placeholder="每行一条：广告 / re:刷单|代练"></textarea>
+    <div class="row"><span class="flab">用户名</span></div>
+    <textarea id="sFilterUser" class="ta" rows="2"></textarea>
+    <button onclick="saveFilter()">保存过滤规则</button>
+  </div>
+
+  <div class="card">
+    <h2>播报模板（{username} {gift_name}）</h2>
+    <div class="row"><span class="flab">进场</span></div>
+    <textarea id="sGrEnter" class="ta" rows="2"></textarea>
+    <div class="row"><span class="flab">礼物</span></div>
+    <textarea id="sGrGift" class="ta" rows="2"></textarea>
+    <div class="row"><span class="flab">关注</span></div>
+    <textarea id="sGrFollow" class="ta" rows="2"></textarea>
+    <button onclick="saveGreet()">保存播报模板</button>
+  </div>
+
+  <div class="card">
+    <h2>抖音弹幕源</h2>
+    <div class="row"><span class="flab">地址</span><input type="text" id="sSource" placeholder="http://192.168.x.x:8888/danmu"></div>
+    <button onclick="saveSource()">保存弹幕源</button>
+  </div>
+
+  <div class="card">
+    <h2>测试回复</h2>
+    <div class="row">
+      <input type="text" id="sTestText" placeholder="模拟一条弹幕">
+      <button class="gray" onclick="testReplyM()">测试</button>
+    </div>
+    <p class="hint" id="sTestResult">输入弹幕点测试，看它会走关键词、AI 还是过滤。</p>
+  </div>
+
   <div class="card">
     <h2>连接</h2>
     <p class="hint" style="margin-top:0">
       手机与电脑需在同一局域网，服务端 host 需改为 <code>0.0.0.0</code>。<br>
-      浏览器菜单「添加到主屏幕」即可像 App 一样全屏使用。<br>
-      完整功能（关键词/过滤/备份等）请用电脑端：<a class="link" href="/" target="_blank">打开控制台</a>
+      浏览器打开可「添加到主屏幕」当 App；APK 内打开会多出「抖音」自动化页。<br>
+      文件管理/备份等完整功能：<a class="link" href="/" target="_blank">打开电脑端控制台</a>
     </p>
   </div>
 </section>
@@ -221,6 +321,7 @@
   <button class="on" data-p="home" onclick="go(this)"><span class="ico">🏠</span>首页</button>
   <button data-p="msgs" onclick="go(this)"><span class="ico">💬</span>消息</button>
   <button data-p="speak" onclick="go(this)"><span class="ico">🎙️</span>话术</button>
+  <button data-p="douyin" onclick="go(this)" id="navDouyin" style="display:none"><span class="ico">🎵</span>抖音</button>
   <button data-p="set" onclick="go(this)"><span class="ico">⚙️</span>设置</button>
 </nav>
 
@@ -236,6 +337,8 @@ function go(btn) {
   document.querySelectorAll('nav.bottom button').forEach(b => b.classList.toggle('on', b === btn));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   $('page-' + btn.dataset.p).classList.add('active');
+  if (btn.dataset.p === 'douyin') checkA11y();
+  if (btn.dataset.p === 'set') loadSettingsM();
 }
 
 /* 手机浏览器要求用户先交互才能出声 */
@@ -354,6 +457,127 @@ async function speak(text, clear) {
   if (await post('/api/speak', { text })) { if (clear) $('speakText').value = ''; }
 }
 
+/* ---------- 抖音自动化（AndroidBridge，仅 APK 内可用） ---------- */
+const hasBridge = typeof AndroidBridge !== 'undefined';
+if (hasBridge) $('navDouyin').style.display = '';
+
+function checkA11y() {
+  if (!hasBridge) return;
+  const on = AndroidBridge.serviceEnabled();
+  $('a11ySub').textContent = on ? '✅ 已开启，可以执行自动化' : '❌ 未开启，点右侧「去开启」';
+  $('a11ySub').style.color = on ? 'var(--green)' : 'var(--orange)';
+}
+function openA11y() { hasBridge && AndroidBridge.openAccessibilitySettings(); }
+function bcall(fn, done) {
+  if (!hasBridge) return alert('仅 APK 内可用');
+  setTimeout(() => {
+    const r = fn(AndroidBridge);
+    if (done) done(r);
+  }, 30);
+}
+function doStartLive() {
+  unlockAudio();
+  const btn = $('liveBtn');
+  btn.disabled = true; btn.textContent = '⏳ 正在执行，请勿切走应用…';
+  bcall(s => s.startLive(), ok => {
+    btn.disabled = false; btn.textContent = '🚀 一键开播（抖音）';
+    $('ctrlMsg').textContent = ok ? '开播流程执行完毕，请在抖音确认' : '未完成：抖音界面可能已改版，试试「按文字点击」';
+    $('ctrlMsg').style.color = ok ? 'var(--green)' : 'var(--orange)';
+  });
+}
+function doLike() { bcall(s => s.like()); }
+function doComment() {
+  const t = $('dyComment').value.trim();
+  if (!t) return;
+  bcall(s => s.sendComment(t), ok => { if (ok) $('dyComment').value = ''; });
+}
+function doTap() {
+  const t = $('dyTap').value.trim();
+  if (t) bcall(s => s.tapText(t), ok => { if (!ok) alert('没找到该文字的控件'); });
+}
+
+/* ---------- 设置页：全量控制 ---------- */
+function parseKwRules(text) {
+  return text.split('\n').map(s => s.trim()).filter(Boolean).filter(s => !s.startsWith('#'))
+    .map(line => {
+      const [k, r] = line.split('=>');
+      return { keys: (k || '').split('|').map(s => s.trim()).filter(Boolean),
+               replies: (r || '').split('||').map(s => s.trim()).filter(Boolean) };
+    }).filter(r => r.keys.length && r.replies.length);
+}
+
+async function loadSettingsM() {
+  try {
+    const c = await (await fetch('/api/settings')).json();
+    $('sBase').value = c.llm?.base_url || ''; $('sKey').value = c.llm?.api_key || '';
+    $('sModel').value = c.llm?.model || ''; $('sPrompt').value = c.llm?.system_prompt || '';
+    $('sInterval').value = c.reply?.per_user_interval ?? 8; $('sTurns').value = c.reply?.max_turns ?? 6;
+    $('sKw').value = (c.keywords?.rules || []).map(r =>
+      `${(r.keys || []).join('|')} => ${(r.replies || []).join('||')}`).join('\n');
+    $('sFilterContent').value = (c.filter?.content_rules || []).join('\n');
+    $('sFilterUser').value = (c.filter?.username_rules || []).join('\n');
+    $('sGrEnter').value = (c.greet?.entrance_templates || []).join('\n');
+    $('sGrGift').value = (c.greet?.gift_templates || []).join('\n');
+    $('sGrFollow').value = (c.greet?.follow_templates || []).join('\n');
+    $('sSource').value = c.douyin?.source_url || '';
+  } catch (e) { /* 忽略 */ }
+}
+
+async function saveAI() {
+  const r = await post('/api/settings', { llm: {
+      enabled: $('aiToggle').checked, base_url: $('sBase').value, api_key: $('sKey').value,
+      model: $('sModel').value, system_prompt: $('sPrompt').value, max_tokens: 120 },
+    reply: { per_user_interval: parseFloat($('sInterval').value) || 8,
+             max_turns: parseInt($('sTurns').value) || 6 } });
+  alert(r.ok ? 'AI 设置已保存' : r.error);
+}
+async function saveKw() {
+  const r = await post('/api/settings', { keywords: {
+    enable: true, rules: parseKwRules($('sKw').value) } });
+  alert(r.ok ? '关键词已保存' : r.error);
+}
+async function saveFilter() {
+  const lines = t => t.split('\n').map(s => s.trim()).filter(Boolean);
+  const r = await post('/api/settings', { filter: {
+    content_rules: lines($('sFilterContent').value),
+    username_rules: lines($('sFilterUser').value) } });
+  alert(r.ok ? '过滤规则已保存' : r.error);
+}
+async function saveGreet() {
+  const lines = t => t.split('\n').map(s => s.trim()).filter(Boolean);
+  const r = await post('/api/settings', { greet: {
+    entrance_templates: lines($('sGrEnter').value),
+    gift_templates: lines($('sGrGift').value),
+    follow_templates: lines($('sGrFollow').value) } });
+  alert(r.ok ? '播报模板已保存' : r.error);
+}
+async function saveSource() {
+  const r = await post('/api/settings', { douyin: { source_url: $('sSource').value } });
+  alert(r.ok ? '弹幕源已保存' : r.error);
+}
+async function fetchModelsM() {
+  const r = await (await fetch('/api/llm/models')).json();
+  const sel = $('sModelList');
+  if (!r.ok) { alert(r.error); return; }
+  sel.style.display = 'block';
+  sel.innerHTML = (r.models || []).map(m => `<option>${m}</option>`).join('');
+  if (r.models?.includes($('sModel').value)) sel.value = $('sModel').value;
+}
+async function testReplyM() {
+  const text = $('sTestText').value.trim();
+  if (!text) return;
+  const r = await (await fetch('/api/test_reply', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }) })).json();
+  const desc = { keyword: `关键词回复：${r.reply}`, llm: '进入 AI 回复',
+    blocked: `违禁词拦截：${r.reason}`, filtered: `已过滤：${r.reason}`,
+    ratelimited: `限流中 ${r.wait}s`, song: '点歌指令', integral: '积分指令',
+    ai_disabled: 'AI 回复已关闭' };
+  const el = $('sTestResult');
+  el.textContent = '路由：' + (desc[r.action] || r.action);
+  el.style.color = 'var(--green)';
+}
+
 async function poll() {
   try {
     const s = await (await fetch('/api/console/status')).json();
@@ -368,6 +592,8 @@ setInterval(poll, 5000);
 /* 初始化 */
 (async function init() {
   connectWs(); poll();
+  if (hasBridge) checkA11y();
+  loadSettingsM();
   try {
     const cfg = await (await fetch('/api/settings')).json();
     const rid = cfg.platform === 'douyin' ? cfg.douyin?.room_id : cfg.bilibili?.room_id;

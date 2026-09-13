@@ -3,21 +3,26 @@ package com.ionrh.aianchor
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
 import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
+import android.widget.Toast
 
 /**
  * AI 直播助手安卓壳：WebView 加载电脑端服务的手机页（/mobile.html）。
  * 首次启动询问服务器地址并记住；连接失败可重新填写。
+ * 注入 AndroidBridge 供页面调用无障碍能力（一键开播/点赞/发弹幕/文字点击）。
  */
 class MainActivity : Activity() {
 
@@ -40,6 +45,7 @@ class MainActivity : Activity() {
             mediaPlaybackRequiresUserGesture = false
             cacheMode = WebSettings.LOAD_DEFAULT
         }
+        web.addJavascriptInterface(Bridge(), "AndroidBridge")
         web.webChromeClient = WebChromeClient()
         web.webViewClient = object : WebViewClient() {
             override fun onReceivedError(
@@ -54,6 +60,43 @@ class MainActivity : Activity() {
         val saved = prefs.getString("server", null)
         if (saved.isNullOrBlank()) askServer(null) else load(saved)
     }
+
+    /** 页面 ↔ 无障碍服务的桥。方法在桥线程执行，阻塞式返回结果。 */
+    inner class Bridge {
+        @JavascriptInterface
+        fun serviceEnabled(): Boolean = AnchorAccessibilityService.isRunning()
+
+        @JavascriptInterface
+        fun openAccessibilitySettings() {
+            runOnUiThread {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                Toast.makeText(this@MainActivity, "在列表中找到「AI直播助手」并开启", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        @JavascriptInterface
+        fun startLive(): Boolean = svc()?.startLive() ?: false
+
+        @JavascriptInterface
+        fun like(): Boolean = svc()?.like() ?: false
+
+        @JavascriptInterface
+        fun sendComment(text: String): Boolean = svc()?.sendComment(text) ?: false
+
+        @JavascriptInterface
+        fun tapText(text: String): Boolean = svc()?.tapText(text) ?: false
+
+        @JavascriptInterface
+        fun goBack(): Boolean = svc()?.goBack() ?: false
+    }
+
+    private fun svc(): AnchorAccessibilityService? =
+        AnchorAccessibilityService.instance ?: run {
+            runOnUiThread {
+                Toast.makeText(this, "请先在设置页开启无障碍服务", Toast.LENGTH_SHORT).show()
+            }
+            null
+        }
 
     private fun load(server: String) {
         prefs.edit().putString("server", server).apply()

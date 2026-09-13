@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AI直播助手</string>
+    <string name="accessibility_desc">用于 AI 直播助手自动化操作抖音：一键开播、点赞、发送弹幕回复。仅在您主动触发时执行操作。</string>
 </resources>
