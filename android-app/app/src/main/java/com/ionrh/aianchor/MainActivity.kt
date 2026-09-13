@@ -88,7 +88,10 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun startLive(platform: String): Boolean = svc()?.startLive(platform) ?: false
+        fun startLive(platform: String): Boolean {
+            prefs.edit().putString("last_platform", platform).apply()
+            return svc()?.startLive(platform) ?: false
+        }
 
         @JavascriptInterface
         fun like(): Boolean = svc()?.like() ?: false
@@ -115,6 +118,38 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun autoPipEnabled(): Boolean = prefs.getBoolean("auto_pip", true)
+
+        /** 悬浮球：需要系统授予「显示在其他应用上层」权限 */
+        @JavascriptInterface
+        fun overlayReady(): Boolean = Settings.canDrawOverlays(this)
+
+        @JavascriptInterface
+        fun openOverlaySettings() {
+            runOnUiThread {
+                startActivity(Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:$packageName")
+                ))
+                Toast.makeText(this, "请允许「显示在其他应用上层」，然后回来重新打开开关", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        @JavascriptInterface
+        fun floatShow() {
+            if (!Settings.canDrawOverlays(this)) {
+                runOnUiThread { openOverlaySettings() }
+                return
+            }
+            svc()?.showFloat()
+        }
+
+        @JavascriptInterface
+        fun floatHide() {
+            svc()?.hideFloat()
+        }
+
+        @JavascriptInterface
+        fun floatShowing(): Boolean = svc()?.isFloatShowing ?: false
     }
 
     /** 离开应用（如去刷抖音）时自动缩成小窗，保持遥控可见 */

@@ -3,9 +3,19 @@ package com.ionrh.aianchor
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Path
 import android.graphics.Rect
+import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
@@ -119,6 +129,156 @@ class AnchorAccessibilityService : AccessibilityService() {
     private fun dismissPopups() {
         listOf("我知道了", "以后再说", "稍后再说", "取消", "同意").forEach { tapText(it, 500) }
     }
+
+    // ---------- 悬浮球 ----------
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var ball: View? = null
+    private var panel: View? = null
+    private val wm: WindowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+    val isFloatShowing: Boolean get() = ball != null
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun circleBg(color: Int): GradientDrawable =
+        GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
+
+    fun showFloat() {
+        if (ball != null) return
+        mainHandler.post { addBall() }
+    }
+
+    fun hideFloat() {
+        mainHandler.post {
+            ball?.let { try { wm.removeView(it) } catch (_: Exception) {} }
+            ball = null
+            hidePanel()
+        }
+    }
+
+    private fun addBall() {
+        val size = dp(52)
+        val lp = WindowManager.LayoutParams(
+            size, size,
+            overlayType(),
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        lp.gravity = Gravity.TOP or Gravity.START
+        lp.x = dp(12); lp.y = dp(320)
+
+        val tv = TextView(this).apply {
+            text = "AI"
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            textSize = 16f
+            background = circleBg(0xE6161F33.toInt()).apply {
+                setStroke(dp(1), 0xFF4F8CFF.toInt())
+            }
+        }
+
+        var downX = 0f; var downY = 0f; var lpX = 0; var lpY = 0; var moved = false
+        tv.setOnTouchListener { _, e ->
+            when (e.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    downX = e.rawX; downY = e.rawY; lpX = lp.x; lpY = lp.y; moved = false; true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    if (Math.abs(e.rawX - downX) > dp(6) || Math.abs(e.rawY - downY) > dp(6)) moved = true
+                    if (moved) {
+                        lp.x = lpX + (e.rawX - downX).toInt()
+                        lp.y = lpY + (e.rawY - downY).toInt()
+                        try { wm.updateViewLayout(tv, lp) } catch (_: Exception) {}
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    if (!moved) togglePanel()
+                    true
+                }
+                else -> false
+            }
+        }
+
+        try {
+            wm.addView(tv, lp)
+            ball = tv
+        } catch (_: Exception) {
+            ball = null
+        }
+    }
+
+    private fun togglePanel() {
+        if (panel != null) hidePanel() else showPanel()
+    }
+
+    private fun hidePanel() {
+        panel?.let { try { wm.removeView(it) } catch (_: Exception) {} }
+        panel = null
+    }
+
+    private fun showPanel() {
+        if (ball == null) return
+        hidePanel()
+        val dp16 = dp(16)
+        val lp = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
+            overlayType(),
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        lp.gravity = Gravity.TOP or Gravity.START
+        lp.x = dp(12); lp.y = dp(390)
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp16, dp(10), dp16, dp(10))
+            background = GradientDrawable().apply {
+                setColor(0xF0161F33.toInt()); cornerRadius = dp(14).toFloat()
+                setStroke(dp(1), 0xFF26304A.toInt())
+            }
+        }
+
+        fun item(label: String, onClick: () -> Unit) {
+            val t = TextView(this@AnchorAccessibilityService).apply {
+                text = label
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                setPadding(0, dp(10), 0, dp(10))
+                setOnClickListener {
+                    hidePanel()
+                    Thread { onClick() }.start()
+                }
+            }
+            box.addView(t)
+        }
+
+        item("🚀 开播（上次平台）") { startLive(prefsPlatform()) }
+        item("❤️ 点赞") { like() }
+        item("↩️ 返回") { goBack() }
+        item("📱 打开本应用") {
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }
+        item("✕ 关闭悬浮球") { hideFloat() }
+
+        try {
+            wm.addView(box, lp)
+            panel = box
+        } catch (_: Exception) {
+            panel = null
+        }
+    }
+
+    private fun prefsPlatform(): String =
+        getSharedPreferences("anchor", MODE_PRIVATE).getString("last_platform", "douyin") ?: "douyin"
+
+    private fun overlayType(): Int =
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        else
+            @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
 
     // ---------- 内部 ----------
 

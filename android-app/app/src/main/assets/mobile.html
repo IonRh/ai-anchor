@@ -231,6 +231,10 @@
       <div class="lab">离开时自动小窗<small>去抖音等应用时，本 App 缩成悬浮小窗，遥控不中断</small></div>
       <label class="tgl"><input type="checkbox" id="autoPip" checked onchange="bcall(s => s.setAutoPip(this.checked))"><span class="knob"></span></label>
     </div>
+    <div class="switch-row">
+      <div class="lab">悬浮球<small id="floatSub">小圆球浮在抖音上，点开即开播/点赞/返回</small></div>
+      <label class="tgl"><input type="checkbox" id="floatToggle" onchange="toggleFloat(this.checked)"><span class="knob"></span></label>
+    </div>
     <p class="hint">开播脚本按界面文字自动点击，平台改版可能失效；失败时用下方「按文字点击」补一步，或告诉我实际按钮文字我来适配。</p>
   </div>
   <div class="card">
@@ -524,6 +528,16 @@ function doStartLive() {
   });
 }
 function doLike() { bcall(s => s.like()); }
+function toggleFloat(on) {
+  if (!hasBridge) return;
+  if (on && !AndroidBridge.overlayReady()) {
+    $('floatToggle').checked = false;
+    AndroidBridge.openOverlaySettings();   // 授权后回来重新打开开关
+    return;
+  }
+  bcall(s => { if (on) s.floatShow(); else s.floatHide(); });
+  $('floatSub').textContent = on ? '✅ 悬浮球已显示，拖动可移动，点击展开面板' : '已关闭';
+}
 function doComment() {
   const t = $('dyComment').value.trim();
   if (!t) return;
