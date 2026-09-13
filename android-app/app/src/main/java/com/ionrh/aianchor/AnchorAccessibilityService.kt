@@ -79,19 +79,45 @@ class AnchorAccessibilityService : AccessibilityService() {
 
     fun goBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
 
-    /** 一键开播（抖音脚本，界面文案随版本可能变化，逐个尝试） */
-    fun startLive(): Boolean {
-        if (!launchApp(DOUYIN_PKG)) return false
+    /** 各平台开播脚本：入口文字（依次尝试）→ 开始按钮文字（依次尝试）。文案随版本变化时按需补充。 */
+    private val liveScripts = mapOf(
+        "douyin" to Script("com.ss.android.ugc.aweme", listOf("开直播"),
+            listOf("开始视频直播", "开启视频直播", "开始直播", "开播")),
+        "kuaishou" to Script("com.smile.gifmaker", listOf("开直播", "直播"),
+            listOf("开始视频直播", "开始直播", "开播")),
+        "bilibili" to Script("com.bilibili.app", listOf("开直播", "直播"),
+            listOf("开始直播", "开播", "开始视频直播")),
+        "taobao" to Script("com.taobao.taobao", listOf("直播"),
+            listOf("开始直播", "开播", "开始视频直播")),
+        "pinduoduo" to Script("com.xunmeng.pinduoduo", listOf("多多直播", "直播"),
+            listOf("开始直播", "开播")),
+        "douyin_lite" to Script("com.ss.android.ugc.aweme.lite", listOf("开直播"),
+            listOf("开始视频直播", "开启视频直播", "开始直播", "开播")),
+    )
+
+    data class Script(val pkg: String, val entries: List<String>, val starts: List<String>)
+
+    /** 多平台一键开播：打开 App → 依次找入口文字点击 → 依次找开始按钮点击 */
+    fun startLive(platform: String): Boolean {
+        val script = liveScripts[platform] ?: return false
+        if (!launchApp(script.pkg)) return false
         Thread.sleep(3500)
-        // 顺手关掉常见弹窗
-        listOf("我知道了", "以后再说", "稍后再说", "取消").forEach { tapText(it, 600) }
-        if (!tapText("开直播", 8000)) return false
+        dismissPopups()
+        var entered = false
+        for (entry in script.entries) {
+            if (tapText(entry, 3000)) { entered = true; break }
+        }
+        if (!entered) return false
         Thread.sleep(2500)
-        listOf("我知道了", "以后再说", "取消").forEach { tapText(it, 600) }
-        for (t in listOf("开始视频直播", "开启视频直播", "开始直播", "开播")) {
-            if (tapText(t, 2000)) return true
+        dismissPopups()
+        for (t in script.starts) {
+            if (tapText(t, 2500)) return true
         }
         return false
+    }
+
+    private fun dismissPopups() {
+        listOf("我知道了", "以后再说", "稍后再说", "取消", "同意").forEach { tapText(it, 500) }
     }
 
     // ---------- 内部 ----------

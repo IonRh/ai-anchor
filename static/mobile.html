@@ -210,15 +210,28 @@
     <p class="hint">开启方法：系统设置 → 无障碍 → 已下载的应用 → 「AI直播助手」→ 开启。</p>
   </div>
   <div class="card">
-    <h2>抖音自动化</h2>
+    <h2>多平台一键开播</h2>
     <div class="row">
-      <button id="liveBtn" style="flex:1;padding:16px;font-size:16px" onclick="doStartLive()">🚀 一键开播（抖音）</button>
+      <select id="dyPlatform" style="max-width:150px">
+        <option value="douyin">抖音</option>
+        <option value="douyin_lite">抖音极速版</option>
+        <option value="kuaishou">快手</option>
+        <option value="bilibili">B 站</option>
+        <option value="taobao">淘宝</option>
+        <option value="pinduoduo">拼多多</option>
+      </select>
+      <button id="liveBtn" style="flex:1;padding:16px;font-size:16px" onclick="doStartLive()">🚀 一键开播</button>
     </div>
     <div class="row">
       <button class="gray" style="flex:1" onclick="doLike()">❤️ 双击点赞</button>
       <button class="gray" style="flex:1" onclick="bcall(s => s.goBack())">↩️ 返回</button>
+      <button style="flex:1" onclick="bcall(s => s.enterPip())">🪟 小窗</button>
     </div>
-    <p class="hint">一键开播：自动打开抖音 → 点「开直播」→ 点「开始视频直播」。抖音界面文案随版本可能变化，失败时可用下方「按文字点击」手动补一步。</p>
+    <div class="switch-row">
+      <div class="lab">离开时自动小窗<small>去抖音等应用时，本 App 缩成悬浮小窗，遥控不中断</small></div>
+      <label class="tgl"><input type="checkbox" id="autoPip" checked onchange="bcall(s => s.setAutoPip(this.checked))"><span class="knob"></span></label>
+    </div>
+    <p class="hint">开播脚本按界面文字自动点击，平台改版可能失效；失败时用下方「按文字点击」补一步，或告诉我实际按钮文字我来适配。</p>
   </div>
   <div class="card">
     <h2>发弹幕到抖音直播间</h2>
@@ -476,6 +489,7 @@ if (hasBridge) {
   $('navDouyin').style.display = '';
   $('serverCard').style.display = '';
   $('sServer').value = SERVER;
+  $('autoPip').checked = AndroidBridge.autoPipEnabled();
 }
 function saveServer() {
   if (!hasBridge) return;
@@ -502,9 +516,10 @@ function doStartLive() {
   unlockAudio();
   const btn = $('liveBtn');
   btn.disabled = true; btn.textContent = '⏳ 正在执行，请勿切走应用…';
-  bcall(s => s.startLive(), ok => {
-    btn.disabled = false; btn.textContent = '🚀 一键开播（抖音）';
-    $('ctrlMsg').textContent = ok ? '开播流程执行完毕，请在抖音确认' : '未完成：抖音界面可能已改版，试试「按文字点击」';
+  const platform = $('dyPlatform').value;
+  bcall(s => s.startLive(platform), ok => {
+    btn.disabled = false; btn.textContent = '🚀 一键开播';
+    $('ctrlMsg').textContent = ok ? `${platform} 开播流程执行完毕，请在应用内确认` : '未完成：该平台界面可能已改版，试试「按文字点击」';
     $('ctrlMsg').style.color = ok ? 'var(--green)' : 'var(--orange)';
   });
 }

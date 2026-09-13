@@ -3,10 +3,13 @@ package com.ionrh.aianchor
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Rational
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
@@ -85,7 +88,7 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun startLive(): Boolean = svc()?.startLive() ?: false
+        fun startLive(platform: String): Boolean = svc()?.startLive(platform) ?: false
 
         @JavascriptInterface
         fun like(): Boolean = svc()?.like() ?: false
@@ -98,6 +101,34 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun goBack(): Boolean = svc()?.goBack() ?: false
+
+        /** 缩成画中画小窗（悬浮在抖音等应用上，窗口内按钮仍可操作） */
+        @JavascriptInterface
+        fun enterPip() {
+            runOnUiThread { enterPipNow() }
+        }
+
+        @JavascriptInterface
+        fun setAutoPip(on: Boolean) {
+            prefs.edit().putBoolean("auto_pip", on).apply()
+        }
+
+        @JavascriptInterface
+        fun autoPipEnabled(): Boolean = prefs.getBoolean("auto_pip", true)
+    }
+
+    /** 离开应用（如去刷抖音）时自动缩成小窗，保持遥控可见 */
+    override fun onUserLeaveHint() {
+        if (prefs.getBoolean("auto_pip", true)) enterPipNow()
+    }
+
+    private fun enterPipNow() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(9, 16))
+                .build()
+            enterPictureInPictureMode(params)
+        }
     }
 
     private fun svc(): AnchorAccessibilityService? =
